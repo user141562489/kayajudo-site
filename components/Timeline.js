@@ -8,6 +8,7 @@ export default function Timeline({ userId, authorId, onReply, onQuote }) {
   const [notes, setNotes] = useState(null);
   const [byId, setById] = useState({});
   const [reactionsMap, setReactionsMap] = useState({});
+  const [myRenotes, setMyRenotes] = useState({});
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -47,12 +48,19 @@ export default function Timeline({ userId, authorId, onReply, onQuote }) {
     const userIds = [...new Set(all.map((n) => n.user_id))];
     const noteIds = all.map((n) => n.id);
     const empty = { data: [], error: null };
-    const [profRes, reactRes] = await Promise.all([
+    const [profRes, reactRes, renoteRes] = await Promise.all([
       userIds.length
         ? supabase.from('profiles').select('id, handle, display_name, avatar_url').in('id', userIds)
         : empty,
       noteIds.length
         ? supabase.from('reactions').select('note_id, user_id, emoji').in('note_id', noteIds)
+        : empty,
+      userId && noteIds.length
+        ? supabase
+            .from('notes')
+            .select('id, renote_of, text, file_urls')
+            .eq('user_id', userId)
+            .in('renote_of', noteIds)
         : empty,
     ]);
     if (profRes.error) problems.push('プロフィールを読み込めませんでした：' + profRes.error.message);
@@ -66,10 +74,17 @@ export default function Timeline({ userId, authorId, onReply, onQuote }) {
     const grouped = {};
     for (const r of reactRes.data ?? []) (grouped[r.note_id] ??= []).push(r);
 
+    // 自分がリノートだけした投稿：元の投稿ID → そのリノートのID
+    const mine = {};
+    for (const r of renoteRes.data ?? []) {
+      if (!r.text && !(r.file_urls?.length > 0)) mine[r.renote_of] = r.id;
+    }
+
     setById(lookup);
     setReactionsMap(grouped);
+    setMyRenotes(mine);
     setNotes(rows.map((r) => lookup[r.id]));
-  }, [authorId]);
+  }, [authorId, userId]);
 
   useEffect(() => {
     load();
@@ -96,6 +111,7 @@ export default function Timeline({ userId, authorId, onReply, onQuote }) {
           note={n}
           byId={byId}
           reactionsMap={reactionsMap}
+          myRenotes={myRenotes}
           userId={userId}
           onChange={load}
           onReply={onReply}
