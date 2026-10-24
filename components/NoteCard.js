@@ -1,7 +1,8 @@
 import Attachment from './Attachment';
+import ReactionBar from './ReactionBar';
 import { safeUrl } from '../lib/supabase';
 
-export default function NoteCard({ note }) {
+export default function NoteCard({ note, reactions, userId, onChange }) {
   const p = note.profiles;
   const avatar = safeUrl(p?.avatar_url || '');
   return (
@@ -17,6 +18,7 @@ export default function NoteCard({ note }) {
         </div>
         {note.text && <p className="text">{note.text}</p>}
         {note.file_urls?.map((u, i) => <Attachment key={i} url={u} />)}
+        <ReactionBar noteId={note.id} reactions={reactions} userId={userId} onChange={onChange} />
       </div>
     </article>
   );
