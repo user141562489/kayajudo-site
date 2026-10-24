@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase, safeUrl } from '../../../lib/supabase';
 import { useSession } from '../../../lib/useSession';
+import EmojiText, { initialOf } from '../../../components/EmojiText';
+import FollowBar from '../../../components/FollowBar';
 import ProfileEditor from '../../../components/ProfileEditor';
 import Timeline from '../../../components/Timeline';
-import FollowBar from '../../../components/FollowBar';
 
 export default function ProfilePage() {
   const { handle } = useParams();
@@ -36,11 +36,10 @@ export default function ProfilePage() {
   const avatar = safeUrl(profile?.avatar_url || '');
 
   return (
-    <div className="shell">
-      <header className="top">
-        <h1><Link href="/" className="plain">カヤジュッドサイト</Link></h1>
-        <Link href="/" className="back">← タイムラインへ</Link>
-      </header>
+    <>
+      <div className="page-head">
+        <h2>プロフィール</h2>
+      </div>
 
       {profile === undefined && <p className="empty">読み込み中…</p>}
 
@@ -58,7 +57,9 @@ export default function ProfilePage() {
               {avatar ? (
                 <img src={avatar} alt="" referrerPolicy="no-referrer" />
               ) : (
-                <span>{(profile.display_name || profile.handle).slice(0, 1)}</span>
+                <span>
+                  <EmojiText text={initialOf(profile.display_name || profile.handle)} />
+                </span>
               )}
             </div>
           </div>
@@ -66,16 +67,27 @@ export default function ProfilePage() {
           <div className="profile-info">
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <div>
-                <h2>{profile.display_name || profile.handle}</h2>
+                <h2>
+                  <EmojiText text={profile.display_name || profile.handle} />
+                </h2>
                 <span className="handle">@{profile.handle}</span>
               </div>
               {isMe && (
-                <button className="quiet" onClick={() => setEditing(!editing)}>
-                  プロフィールを編集
-                </button>
+                <div className="row">
+                  <button className="quiet" onClick={() => setEditing(!editing)}>
+                    プロフィールを編集
+                  </button>
+                  <button className="quiet" onClick={() => supabase.auth.signOut()}>
+                    ログアウト
+                  </button>
+                </div>
               )}
             </div>
-            {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+            {profile.bio && (
+              <p className="profile-bio">
+                <EmojiText text={profile.bio} />
+              </p>
+            )}
             <p className="profile-since">
               {new Date(profile.created_at).toLocaleDateString('ja-JP')} に参加
             </p>
@@ -101,6 +113,6 @@ export default function ProfilePage() {
           />
         </>
       )}
-    </div>
+    </>
   );
 }

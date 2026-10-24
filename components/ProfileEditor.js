@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase, safeUrl } from '../lib/supabase';
+import EmojiText, { initialOf } from './EmojiText';
 
 export default function ProfileEditor({ userId, onSaved, onClose }) {
   const [form, setForm] = useState(null);
@@ -65,6 +66,7 @@ export default function ProfileEditor({ userId, onSaved, onClose }) {
       );
       return;
     }
+    window.dispatchEvent(new Event('profile-updated')); // 左のメニューの表示も更新する
     onSaved(form.handle);
   }
 
@@ -85,7 +87,9 @@ export default function ProfileEditor({ userId, onSaved, onClose }) {
           {avatarPreview ? (
             <img src={avatarPreview} alt="" referrerPolicy="no-referrer" />
           ) : (
-            <span>{(form.display_name || '?').slice(0, 1)}</span>
+            <span>
+              <EmojiText text={initialOf(form.display_name || '?')} />
+            </span>
           )}
         </div>
       </div>

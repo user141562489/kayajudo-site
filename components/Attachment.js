@@ -1,6 +1,6 @@
 import { safeUrl } from '../lib/supabase';
 
-function kindOf(href) {
+export function kindOf(href) {
   const path = new URL(href).pathname.toLowerCase();
   if (/\.(png|jpe?g|gif|webp|avif|svg)$/.test(path)) return 'image';
   if (/\.(mp4|webm|mov|m4v|ogv)$/.test(path)) return 'video';

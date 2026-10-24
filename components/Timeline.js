@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import NoteCard from './NoteCard';
 
-export default function Timeline({ userId, authorId, onReply, onQuote }) {
+// authorId: その人の投稿だけ / focusId: その投稿と、それへの返信
+export default function Timeline({ userId, authorId, focusId, onReply, onQuote, emptyText }) {
   const [notes, setNotes] = useState(null);
   const [byId, setById] = useState({});
   const [reactionsMap, setReactionsMap] = useState({});
@@ -12,12 +13,16 @@ export default function Timeline({ userId, authorId, onReply, onQuote }) {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    let query = supabase
-      .from('notes')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    if (authorId) query = query.eq('user_id', authorId);
+    let query = supabase.from('notes').select('*');
+    if (focusId) {
+      query = query
+        .or(`id.eq.${focusId},reply_to.eq.${focusId}`)
+        .order('created_at', { ascending: true })
+        .limit(100);
+    } else {
+      query = query.order('created_at', { ascending: false }).limit(50);
+      if (authorId) query = query.eq('user_id', authorId);
+    }
     const { data: rows, error: e1 } = await query;
     if (e1) {
       setError('タイムラインを読み込めませんでした：' + e1.message);
@@ -84,39 +89,43 @@ export default function Timeline({ userId, authorId, onReply, onQuote }) {
     setReactionsMap(grouped);
     setMyRenotes(mine);
     setNotes(rows.map((r) => lookup[r.id]));
-  }, [authorId, userId]);
+  }, [authorId, focusId, userId]);
 
   useEffect(() => {
     load();
+    const scope = focusId ?? authorId ?? 'all';
     const channel = supabase
-      .channel('global-timeline')
+      .channel('timeline-' + scope)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, load)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [load]);
+  }, [load, focusId, authorId]);
 
   if (notes === null) return <p className="empty">読み込み中…</p>;
   return (
     <section>
       {error && <p className="notice">{error}</p>}
       {notes.length === 0 && !error && (
-        <p className="empty">まだ投稿がありません。最初の1件を書いてみましょう。</p>
+        <p className="empty">{emptyText ?? 'まだ投稿がありません。最初の1件を書いてみましょう。'}</p>
       )}
-      {notes.map((n) => (
-        <NoteCard
-          key={n.id}
-          note={n}
-          byId={byId}
-          reactionsMap={reactionsMap}
-          myRenotes={myRenotes}
-          userId={userId}
-          onChange={load}
-          onReply={onReply}
-          onQuote={onQuote}
-        />
+      {notes.map((n, i) => (
+        <Fragment key={n.id}>
+          {focusId && i === 1 && <h3 className="replies-title">返信</h3>}
+          <NoteCard
+            note={n}
+            byId={byId}
+            reactionsMap={reactionsMap}
+            myRenotes={myRenotes}
+            focusId={focusId}
+            userId={userId}
+            onChange={load}
+            onReply={onReply}
+            onQuote={onQuote}
+          />
+        </Fragment>
       ))}
     </section>
   );

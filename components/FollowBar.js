@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase, safeUrl } from '../lib/supabase';
+import EmojiText, { initialOf } from './EmojiText';
 
 function FollowList({ profileId, kind, rev, onClose }) {
   const [people, setPeople] = useState(null);
@@ -68,13 +69,21 @@ function FollowList({ profileId, kind, rev, onClose }) {
                   {avatar ? (
                     <img src={avatar} alt="" referrerPolicy="no-referrer" />
                   ) : (
-                    <span>{(p.display_name || p.handle).slice(0, 1)}</span>
+                    <span>
+                      <EmojiText text={initialOf(p.display_name || p.handle)} />
+                    </span>
                   )}
                 </div>
                 <div className="person-info">
-                  <strong>{p.display_name || p.handle}</strong>
+                  <strong>
+                    <EmojiText text={p.display_name || p.handle} />
+                  </strong>
                   <span className="handle">@{p.handle}</span>
-                  {p.bio && <span className="person-bio">{p.bio}</span>}
+                  {p.bio && (
+                    <span className="person-bio">
+                      <EmojiText text={p.bio} />
+                    </span>
+                  )}
                 </div>
               </Link>
             );

@@ -1,4 +1,5 @@
 import './globals.css';
+import AppShell from '../components/AppShell';
 
 export const metadata = {
   title: 'カヤジュッドサイト',
@@ -8,7 +9,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

@@ -1,28 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState } from 'react';
+import { useSession } from '../lib/useSession';
 import Auth from '../components/Auth';
 import Composer from '../components/Composer';
-import ProfileEditor from '../components/ProfileEditor';
 import Timeline from '../components/Timeline';
-import NotificationBell from '../components/NotificationBell';
 
 export default function Home() {
-  const [session, setSession] = useState(null);
-  const [ready, setReady] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [version, setVersion] = useState(0);
+  const { session, ready } = useSession();
   const [target, setTarget] = useState(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => data.subscription.unsubscribe();
-  }, []);
 
   function pick(kind) {
     return (note) => {
@@ -32,50 +18,22 @@ export default function Home() {
   }
 
   return (
-    <div className="shell">
-      <header className="top">
-        <h1>カヤジュッドサイト</h1>
-        {session && (
-          <div className="row">
-            <NotificationBell userId={session.user.id} />
-            <button className="quiet" onClick={() => setEditing(!editing)}>
-              プロフィール編集
-            </button>
-            <button className="quiet" onClick={() => supabase.auth.signOut()}>
-              ログアウト
-            </button>
-          </div>
-        )}
-      </header>
+    <>
+      <div className="page-head">
+        <h2>ホーム</h2>
+      </div>
 
       {!ready ? null : session ? (
-        <>
-          {editing && (
-            <ProfileEditor
-              userId={session.user.id}
-              onClose={() => setEditing(false)}
-              onSaved={() => {
-                setEditing(false);
-                setVersion((v) => v + 1);
-              }}
-            />
-          )}
-          <Composer
-            userId={session.user.id}
-            target={target}
-            onClearTarget={() => setTarget(null)}
-          />
-        </>
+        <Composer userId={session.user.id} target={target} onClearTarget={() => setTarget(null)} />
       ) : (
         <Auth />
       )}
 
       <Timeline
-        key={version}
         userId={session?.user.id ?? null}
         onReply={pick('reply')}
         onQuote={pick('quote')}
       />
-    </div>
+    </>
   );
 }

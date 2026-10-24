@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Attachment from './Attachment';
+import Attachments from './Attachments';
 import Emoji from './Emoji';
+import EmojiText, { clip, initialOf } from './EmojiText';
 import ReactionBar from './ReactionBar';
-import { supabase, safeUrl } from '../lib/supabase';
 import RichText from './RichText';
+import { supabase, safeUrl } from '../lib/supabase';
 
 const nameOf = (p) => p?.display_name || p?.handle || '不明なユーザー';
-const snippet = (n) =>
-  n?.text ? (n.text.length > 80 ? n.text.slice(0, 80) + '…' : n.text) : '（添付のみの投稿）';
+const snippet = (n) => (n?.text ? clip(n.text, 80) : '（添付のみの投稿）');
 
 function Avatar({ profile }) {
   const src = safeUrl(profile?.avatar_url || '');
@@ -19,7 +19,9 @@ function Avatar({ profile }) {
       {src ? (
         <img src={src} alt="" referrerPolicy="no-referrer" />
       ) : (
-        <span>{nameOf(profile).slice(0, 1)}</span>
+        <span>
+          <EmojiText text={initialOf(nameOf(profile))} />
+        </span>
       )}
     </div>
   );
@@ -33,16 +35,39 @@ function Avatar({ profile }) {
 }
 
 function NameLink({ profile }) {
+  const name = (
+    <strong>
+      <EmojiText text={nameOf(profile)} />
+    </strong>
+  );
   return profile?.handle ? (
     <Link href={`/u/${profile.handle}`} className="plain">
-      <strong>{nameOf(profile)}</strong>
+      {name}
     </Link>
   ) : (
-    <strong>{nameOf(profile)}</strong>
+    name
   );
 }
 
-function NoteView({ note, byId, reactionsMap, myRenotes = {}, userId, onChange, onReply, onQuote }) {
+// 長い本文は6行まででたたみ、「もっと見る」で開く
+function Body({ text, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const long = text.length > 240 || text.split('\n').length > 6;
+  return (
+    <>
+      <p className={'text' + (long && !open ? ' clamped' : '')}>
+        <RichText text={text} />
+      </p>
+      {long && (
+        <button type="button" className="linkbtn-block" onClick={() => setOpen(!open)}>
+          {open ? '閉じる' : 'もっと見る'}
+        </button>
+      )}
+    </>
+  );
+}
+
+function NoteView({ note, byId, reactionsMap, myRenotes = {}, focusId, userId, onChange, onReply, onQuote }) {
   const [menu, setMenu] = useState(false);
   const [error, setError] = useState('');
   const p = note.profiles;
@@ -50,6 +75,7 @@ function NoteView({ note, byId, reactionsMap, myRenotes = {}, userId, onChange, 
   const quoted = note.renote_of ? byId[note.renote_of] : null;
   const myRenoteId = myRenotes[note.id];
   const isMine = userId && note.user_id === userId;
+  const isFocus = note.id === focusId;
 
   async function toggleRenote() {
     setMenu(false);
@@ -70,21 +96,29 @@ function NoteView({ note, byId, reactionsMap, myRenotes = {}, userId, onChange, 
   }
 
   return (
-    <article className="note">
+    <article className={'note' + (isFocus ? ' focus' : '')}>
       <Avatar profile={p} />
       <div className="body">
         {note.reply_to && (
           <p className="reply-label">
-            ↩ {parent ? `@${parent.profiles?.handle} への返信：${snippet(parent)}` : '返信'}
+            {parent ? (
+              <Link href={`/n/${parent.id}`} className="plain">
+                ↩ @{parent.profiles?.handle} への返信：<EmojiText text={snippet(parent)} />
+              </Link>
+            ) : (
+              '↩ 返信'
+            )}
           </p>
         )}
         <div className="meta">
           <NameLink profile={p} />
           <span className="handle">@{p?.handle}</span>
-          <time>{new Date(note.created_at).toLocaleString('ja-JP')}</time>
+          <Link href={`/n/${note.id}`} className="plain">
+            <time>{new Date(note.created_at).toLocaleString('ja-JP')}</time>
+          </Link>
         </div>
-        {note.text && <p className="text"><RichText text={note.text} /></p>}
-        {note.file_urls?.map((u, i) => <Attachment key={i} url={u} />)}
+        {note.text && <Body text={note.text} defaultOpen={isFocus} />}
+        <Attachments urls={note.file_urls} />
 
         {note.renote_of && (
           <div className="quote">
@@ -94,8 +128,8 @@ function NoteView({ note, byId, reactionsMap, myRenotes = {}, userId, onChange, 
                   <NameLink profile={quoted.profiles} />
                   <span className="handle">@{quoted.profiles?.handle}</span>
                 </div>
-                {quoted.text && <p className="text"><RichText text={quoted.text} /></p>}
-                {quoted.file_urls?.map((u, i) => <Attachment key={i} url={u} />)}
+                {quoted.text && <Body text={quoted.text} />}
+                <Attachments urls={quoted.file_urls} />
               </>
             ) : (
               <p className="handle">引用元の投稿は表示できません。</p>
@@ -175,7 +209,7 @@ export default function NoteCard({ note, ...rest }) {
     return (
       <div className="renote-wrap">
         <p className="renote-label">
-          <Emoji char="🔁" /> {nameOf(note.profiles)} がリノート
+          <Emoji char="🔁" /> <EmojiText text={nameOf(note.profiles)} /> がリノート
           {mine && (
             <button type="button" className="linkbtn" onClick={undo}>
               取り消す
