@@ -41,20 +41,30 @@ function NameLink({ profile }) {
   );
 }
 
-function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote }) {
+function NoteView({ note, byId, reactionsMap, myRenotes = {}, userId, onChange, onReply, onQuote }) {
   const [menu, setMenu] = useState(false);
   const [error, setError] = useState('');
   const p = note.profiles;
   const parent = note.reply_to ? byId[note.reply_to] : null;
   const quoted = note.renote_of ? byId[note.renote_of] : null;
+  const myRenoteId = myRenotes[note.id];
+  const isMine = userId && note.user_id === userId;
 
-  async function renote() {
+  async function toggleRenote() {
     setMenu(false);
     setError('');
-    const { error } = await supabase
-      .from('notes')
-      .insert({ user_id: userId, text: '', renote_of: note.id });
-    if (error) setError('リノートできませんでした：' + error.message);
+    const { error } = myRenoteId
+      ? await supabase.from('notes').delete().eq('id', myRenoteId)
+      : await supabase.from('notes').insert({ user_id: userId, text: '', renote_of: note.id });
+    if (error) setError('リノートの操作ができませんでした：' + error.message);
+    onChange();
+  }
+
+  async function remove() {
+    if (!window.confirm('この投稿を削除しますか？\nこの投稿へのリアクションと、リノートも一緒に消えます。')) return;
+    setError('');
+    const { error } = await supabase.from('notes').delete().eq('id', note.id);
+    if (error) setError('削除できませんでした：' + error.message);
     onChange();
   }
 
@@ -109,7 +119,7 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
             <div className="menu-wrap">
               <button
                 type="button"
-                className="chip"
+                className={'chip' + (myRenoteId ? ' mine' : '')}
                 aria-expanded={menu}
                 onClick={() => setMenu(!menu)}
               >
@@ -117,7 +127,9 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
               </button>
               {menu && (
                 <div className="menu" role="menu">
-                  <button type="button" onClick={renote}>リノート</button>
+                  <button type="button" onClick={toggleRenote}>
+                    {myRenoteId ? 'リノートを取り消す' : 'リノート'}
+                  </button>
                   {onQuote && (
                     <button
                       type="button"
@@ -132,6 +144,11 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
                 </div>
               )}
             </div>
+            {isMine && (
+              <button type="button" className="chip danger" aria-label="削除" onClick={remove}>
+                <Emoji char="🗑️" /> 削除
+              </button>
+            )}
             {error && <span className="notice">{error}</span>}
           </div>
         )}
@@ -141,14 +158,29 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
 }
 
 export default function NoteCard({ note, ...rest }) {
+  const [err, setErr] = useState('');
   const isPureRenote = note.renote_of && !note.text && !(note.file_urls?.length > 0);
+
+  async function undo() {
+    setErr('');
+    const { error } = await supabase.from('notes').delete().eq('id', note.id);
+    if (error) setErr('取り消せませんでした：' + error.message);
+    rest.onChange();
+  }
 
   if (isPureRenote) {
     const original = rest.byId[note.renote_of];
+    const mine = rest.userId && note.user_id === rest.userId;
     return (
       <div className="renote-wrap">
         <p className="renote-label">
           <Emoji char="🔁" /> {nameOf(note.profiles)} がリノート
+          {mine && (
+            <button type="button" className="linkbtn" onClick={undo}>
+              取り消す
+            </button>
+          )}
+          {err && <span className="notice"> {err}</span>}
         </p>
         {original ? (
           <NoteView note={original} {...rest} />
