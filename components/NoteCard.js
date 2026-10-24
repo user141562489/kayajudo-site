@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Attachment from './Attachment';
 import Emoji from './Emoji';
 import ReactionBar from './ReactionBar';
@@ -12,7 +13,7 @@ const snippet = (n) =>
 
 function Avatar({ profile }) {
   const src = safeUrl(profile?.avatar_url || '');
-  return (
+  const inner = (
     <div className="avatar">
       {src ? (
         <img src={src} alt="" referrerPolicy="no-referrer" />
@@ -20,6 +21,23 @@ function Avatar({ profile }) {
         <span>{nameOf(profile).slice(0, 1)}</span>
       )}
     </div>
+  );
+  return profile?.handle ? (
+    <Link href={`/u/${profile.handle}`} aria-label={`${nameOf(profile)}のプロフィール`}>
+      {inner}
+    </Link>
+  ) : (
+    inner
+  );
+}
+
+function NameLink({ profile }) {
+  return profile?.handle ? (
+    <Link href={`/u/${profile.handle}`} className="plain">
+      <strong>{nameOf(profile)}</strong>
+    </Link>
+  ) : (
+    <strong>{nameOf(profile)}</strong>
   );
 }
 
@@ -50,7 +68,7 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
           </p>
         )}
         <div className="meta">
-          <strong>{nameOf(p)}</strong>
+          <NameLink profile={p} />
           <span className="handle">@{p?.handle}</span>
           <time>{new Date(note.created_at).toLocaleString('ja-JP')}</time>
         </div>
@@ -62,7 +80,7 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
             {quoted ? (
               <>
                 <div className="meta">
-                  <strong>{nameOf(quoted.profiles)}</strong>
+                  <NameLink profile={quoted.profiles} />
                   <span className="handle">@{quoted.profiles?.handle}</span>
                 </div>
                 {quoted.text && <p className="text">{quoted.text}</p>}
@@ -83,9 +101,11 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
 
         {userId && (
           <div className="actions">
-            <button type="button" className="chip" aria-label="返信" onClick={() => onReply(note)}>
-              <Emoji char="💬" /> 返信
-            </button>
+            {onReply && (
+              <button type="button" className="chip" aria-label="返信" onClick={() => onReply(note)}>
+                <Emoji char="💬" /> 返信
+              </button>
+            )}
             <div className="menu-wrap">
               <button
                 type="button"
@@ -98,15 +118,17 @@ function NoteView({ note, byId, reactionsMap, userId, onChange, onReply, onQuote
               {menu && (
                 <div className="menu" role="menu">
                   <button type="button" onClick={renote}>リノート</button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenu(false);
-                      onQuote(note);
-                    }}
-                  >
-                    引用
-                  </button>
+                  {onQuote && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenu(false);
+                        onQuote(note);
+                      }}
+                    >
+                      引用
+                    </button>
+                  )}
                 </div>
               )}
             </div>
