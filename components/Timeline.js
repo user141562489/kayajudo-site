@@ -69,7 +69,7 @@ export default function Timeline({ userId, authorId, onReply, onQuote }) {
     setById(lookup);
     setReactionsMap(grouped);
     setNotes(rows.map((r) => lookup[r.id]));
-  }, []);
+  }, [authorId]);
 
   useEffect(() => {
     load();
