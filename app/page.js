@@ -37,6 +37,7 @@ export default function Home() {
         <h1>カヤジュッドサイト</h1>
         {session && (
           <div className="row">
+            <NotificationBell userId={session.user.id} />
             <button className="quiet" onClick={() => setEditing(!editing)}>
               プロフィール編集
             </button>
