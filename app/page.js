@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import Auth from '../components/Auth';
 import Composer from '../components/Composer';
+import ProfileEditor from '../components/ProfileEditor';
 import Timeline from '../components/Timeline';
 
 export default function Home() {
   const [session, setSession] = useState(null);
   const [ready, setReady] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -24,19 +27,36 @@ export default function Home() {
       <header className="top">
         <h1>カヤジュッドサイト</h1>
         {session && (
-          <button className="quiet" onClick={() => supabase.auth.signOut()}>
-            ログアウト
-          </button>
+          <div className="row">
+            <button className="quiet" onClick={() => setEditing(!editing)}>
+              プロフィール編集
+            </button>
+            <button className="quiet" onClick={() => supabase.auth.signOut()}>
+              ログアウト
+            </button>
+          </div>
         )}
       </header>
 
       {!ready ? null : session ? (
-        <Composer userId={session.user.id} />
+        <>
+          {editing && (
+            <ProfileEditor
+              userId={session.user.id}
+              onClose={() => setEditing(false)}
+              onSaved={() => {
+                setEditing(false);
+                setVersion((v) => v + 1);
+              }}
+            />
+          )}
+          <Composer userId={session.user.id} />
+        </>
       ) : (
         <Auth />
       )}
 
-      <Timeline />
+      <Timeline key={version} />
     </div>
   );
 }
