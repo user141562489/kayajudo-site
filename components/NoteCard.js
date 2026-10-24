@@ -94,7 +94,7 @@ function NoteView({ note, byId, reactionsMap, myRenotes = {}, userId, onChange, 
                   <NameLink profile={quoted.profiles} />
                   <span className="handle">@{quoted.profiles?.handle}</span>
                 </div>
-                {quoted.text && <p className="text">{quoted.text}</p>}
+                {quoted.text && <p className="text"><RichText text={quoted.text} /></p>}
                 {quoted.file_urls?.map((u, i) => <Attachment key={i} url={u} />)}
               </>
             ) : (
