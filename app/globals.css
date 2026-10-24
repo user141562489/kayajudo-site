@@ -186,32 +186,6 @@ button.pick:hover .emoji { transform: scale(1.3) rotate(-8deg); }
 .menu button { background: transparent; color: var(--text); font-weight: 400; text-align: left; border-radius: 8px; padding: 8px 12px; }
 .menu button:hover { background: var(--line); }
 
-/* ---------- リンクカード ---------- */
-a.link-card {
-  display: flex; margin-top: 10px; border: 1px solid var(--line); border-radius: 12px;
-  overflow: hidden; text-decoration: none; color: inherit; background: var(--bg);
-  transition: border-color 0.2s, transform 0.2s; animation: rise 0.3s ease backwards;
-}
-a.link-card:hover { border-color: var(--sub); transform: translateY(-2px); }
-.link-card .thumb { flex: none; width: 120px; background: var(--line); }
-.link-card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.link-card .info { padding: 10px 12px; min-width: 0; display: grid; gap: 2px; align-content: center; }
-.link-card .site { font-size: 0.75rem; color: var(--link); overflow-wrap: anywhere; }
-.link-card .title, .link-card .desc {
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere;
-}
-.link-card .title { font-weight: 700; font-size: 0.9rem; }
-.link-card .desc { font-size: 0.8rem; color: var(--sub); }
-.link-card.skeleton {
-  height: 72px; border: 1px solid var(--line);
-  background: linear-gradient(90deg, var(--bg) 25%, var(--line) 50%, var(--bg) 75%);
-  background-size: 200% 100%; animation: shimmer 1.4s linear infinite;
-}
-@media (max-width: 480px) {
-  a.link-card { flex-direction: column; }
-  .link-card .thumb { width: 100%; height: 140px; }
-}
-
 /* ---------- プロフィール ---------- */
 .profile-preview { position: relative; margin-bottom: 28px; }
 .profile-header { height: 120px; border-radius: 10px; background: var(--line); overflow: hidden; }
