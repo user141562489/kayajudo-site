@@ -130,3 +130,8 @@ a.back { color: var(--sub); font-size: 0.9rem; text-decoration: none; }
 .profile-info .handle { color: var(--sub); }
 .profile-bio { margin: 12px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .profile-since { margin: 8px 0 0; color: var(--sub); font-size: 0.85rem; }
+button.chip.danger:hover { border-color: #e07a7a; color: #f0a0a0; }
+button.linkbtn {
+  margin-left: 8px; padding: 0; background: none; border-radius: 0;
+  color: var(--accent); font-weight: 400; font-size: 0.8rem; text-decoration: underline;
+}
