@@ -6,6 +6,7 @@ import Auth from '../components/Auth';
 import Composer from '../components/Composer';
 import ProfileEditor from '../components/ProfileEditor';
 import Timeline from '../components/Timeline';
+import NotificationBell from '../components/NotificationBell';
 
 export default function Home() {
   const [session, setSession] = useState(null);
