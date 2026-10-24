@@ -6,6 +6,7 @@ import Attachment from './Attachment';
 import Emoji from './Emoji';
 import ReactionBar from './ReactionBar';
 import { supabase, safeUrl } from '../lib/supabase';
+import RichText from './RichText';
 
 const nameOf = (p) => p?.display_name || p?.handle || '不明なユーザー';
 const snippet = (n) =>
