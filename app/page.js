@@ -56,7 +56,7 @@ export default function Home() {
         <Auth />
       )}
 
-      <Timeline key={version} />
+      <Timeline key={version} userId={session?.user.id ?? null} />
     </div>
   );
 }
