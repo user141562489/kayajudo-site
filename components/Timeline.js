@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import NoteCard from './NoteCard';
 
-export default function Timeline({ userId }) {
+export default function Timeline({ userId, onReply, onQuote }) {
   const [notes, setNotes] = useState(null);
-  const [reactions, setReactions] = useState({});
+  const [byId, setById] = useState({});
+  const [reactionsMap, setReactionsMap] = useState({});
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -21,8 +22,28 @@ export default function Timeline({ userId }) {
       return;
     }
 
-    const noteIds = rows.map((r) => r.id);
-    const userIds = [...new Set(rows.map((r) => r.user_id))];
+    const problems = [];
+
+    // 返信・リノートの元になった投稿を、2段階まで読み込む
+    let all = rows;
+    for (let depth = 0; depth < 2; depth++) {
+      const known = new Set(all.map((n) => n.id));
+      const need = [
+        ...new Set(
+          all.flatMap((n) => [n.renote_of, n.reply_to]).filter((id) => id && !known.has(id))
+        ),
+      ];
+      if (need.length === 0) break;
+      const { data, error } = await supabase.from('notes').select('*').in('id', need);
+      if (error) {
+        problems.push('元の投稿を読み込めませんでした：' + error.message);
+        break;
+      }
+      all = [...all, ...data];
+    }
+
+    const userIds = [...new Set(all.map((n) => n.user_id))];
+    const noteIds = all.map((n) => n.id);
     const empty = { data: [], error: null };
     const [profRes, reactRes] = await Promise.all([
       userIds.length
@@ -32,18 +53,20 @@ export default function Timeline({ userId }) {
         ? supabase.from('reactions').select('note_id, user_id, emoji').in('note_id', noteIds)
         : empty,
     ]);
-
-    const problems = [];
     if (profRes.error) problems.push('プロフィールを読み込めませんでした：' + profRes.error.message);
     if (reactRes.error) problems.push('リアクションを読み込めませんでした：' + reactRes.error.message);
     setError(problems.join(' '));
 
-    const byId = Object.fromEntries((profRes.data ?? []).map((p) => [p.id, p]));
+    const profById = Object.fromEntries((profRes.data ?? []).map((p) => [p.id, p]));
+    const withProfile = all.map((n) => ({ ...n, profiles: profById[n.user_id] ?? null }));
+    const lookup = Object.fromEntries(withProfile.map((n) => [n.id, n]));
+
     const grouped = {};
     for (const r of reactRes.data ?? []) (grouped[r.note_id] ??= []).push(r);
 
-    setReactions(grouped);
-    setNotes(rows.map((r) => ({ ...r, profiles: byId[r.user_id] ?? null })));
+    setById(lookup);
+    setReactionsMap(grouped);
+    setNotes(rows.map((r) => lookup[r.id]));
   }, []);
 
   useEffect(() => {
@@ -66,7 +89,16 @@ export default function Timeline({ userId }) {
         <p className="empty">まだ投稿がありません。最初の1件を書いてみましょう。</p>
       )}
       {notes.map((n) => (
-        <NoteCard key={n.id} note={n} reactions={reactions[n.id] ?? []} userId={userId} onChange={load} />
+        <NoteCard
+          key={n.id}
+          note={n}
+          byId={byId}
+          reactionsMap={reactionsMap}
+          userId={userId}
+          onChange={load}
+          onReply={onReply}
+          onQuote={onQuote}
+        />
       ))}
     </section>
   );
