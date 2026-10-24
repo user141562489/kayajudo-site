@@ -65,7 +65,7 @@ export default function ProfileEditor({ userId, onSaved, onClose }) {
       );
       return;
     }
-    onSaved();
+    onSaved(form.handle);
   }
 
   if (!form) return <div className="panel">{message || '読み込み中…'}</div>;
