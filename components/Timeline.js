@@ -4,18 +4,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import NoteCard from './NoteCard';
 
-export default function Timeline({ userId, onReply, onQuote }) {
+export default function Timeline({ userId, authorId, onReply, onQuote }) {
   const [notes, setNotes] = useState(null);
   const [byId, setById] = useState({});
   const [reactionsMap, setReactionsMap] = useState({});
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const { data: rows, error: e1 } = await supabase
+    let query = supabase
       .from('notes')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
+    if (authorId) query = query.eq('user_id', authorId);
+    const { data: rows, error: e1 } = await query;
     if (e1) {
       setError('タイムラインを読み込めませんでした：' + e1.message);
       setNotes([]);
