@@ -7,6 +7,7 @@ import { supabase, safeUrl } from '../../../lib/supabase';
 import { useSession } from '../../../lib/useSession';
 import ProfileEditor from '../../../components/ProfileEditor';
 import Timeline from '../../../components/Timeline';
+import FollowBar from '../../../components/FollowBar';
 
 export default function ProfilePage() {
   const { handle } = useParams();
@@ -78,6 +79,7 @@ export default function ProfilePage() {
             <p className="profile-since">
               {new Date(profile.created_at).toLocaleDateString('ja-JP')} に参加
             </p>
+            <FollowBar profile={profile} viewerId={session?.user.id ?? null} />
           </div>
 
           {isMe && editing && (
