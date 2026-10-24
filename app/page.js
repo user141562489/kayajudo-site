@@ -12,6 +12,7 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [editing, setEditing] = useState(false);
   const [version, setVersion] = useState(0);
+  const [target, setTarget] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -21,6 +22,13 @@ export default function Home() {
     const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);
+
+  function pick(kind) {
+    return (note) => {
+      setTarget({ kind, note });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  }
 
   return (
     <div className="shell">
@@ -50,13 +58,22 @@ export default function Home() {
               }}
             />
           )}
-          <Composer userId={session.user.id} />
+          <Composer
+            userId={session.user.id}
+            target={target}
+            onClearTarget={() => setTarget(null)}
+          />
         </>
       ) : (
         <Auth />
       )}
 
-      <Timeline key={version} userId={session?.user.id ?? null} />
+      <Timeline
+        key={version}
+        userId={session?.user.id ?? null}
+        onReply={pick('reply')}
+        onQuote={pick('quote')}
+      />
     </div>
   );
 }
