@@ -83,7 +83,7 @@ function NoteView({ note, byId, reactionsMap, myRenotes = {}, userId, onChange, 
           <span className="handle">@{p?.handle}</span>
           <time>{new Date(note.created_at).toLocaleString('ja-JP')}</time>
         </div>
-        {note.text && <p className="text">{note.text}</p>}
+        {note.text && <p className="text"><RichText text={note.text} /></p>}
         {note.file_urls?.map((u, i) => <Attachment key={i} url={u} />)}
 
         {note.renote_of && (
